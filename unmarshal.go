@@ -58,11 +58,8 @@ func unmarshalRecord(journal *sdjournal.Journal, toVal reflect.Value) error {
 
 		if fieldType.Name() == "RawMessage" {
 			if !strings.HasPrefix(value, `{"`) {
-				value = `"` + value + `"`
+				value = strconv.QuoteToASCII(value)
 			}
-			// fix unwanted characters to JSON message
-			value = strings.Replace(value, "\n", `\n`, -1)
-			value = strings.Replace(value, "\t", `\t`, -1)
 			fieldVal.SetBytes(json.RawMessage(value))
 			continue
 		}
