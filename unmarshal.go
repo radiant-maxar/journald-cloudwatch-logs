@@ -50,6 +50,14 @@ func unmarshalRecord(entry *sdjournal.JournalEntry, toVal reflect.Value) error {
 			continue
 		}
 
+		if fieldType.Name() == "RawMessage" {
+			if !strings.HasPrefix(value, `{"`) {
+				value = strconv.QuoteToASCII(value)
+			}
+			fieldVal.SetBytes(json.RawMessage(value))
+			continue
+		}
+
 		switch fieldTypeKind {
 		case reflect.Int:
 			intVal, err := strconv.Atoi(value)
