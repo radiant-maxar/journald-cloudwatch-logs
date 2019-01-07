@@ -100,6 +100,7 @@ func run(configFilename string) error {
 		// though we will miss any logs that were added while we were
 		// running.
 		journal.SeekTail()
+		journal.Next()
 		// Skip the last item so our log will resume only when we get
 		// the *next item.
 		skip = 1
