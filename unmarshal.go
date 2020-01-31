@@ -1,28 +1,25 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strconv"
-	"time"
+	"strings"
 
 	"github.com/coreos/go-systemd/v22/sdjournal"
 )
 
 func UnmarshalRecord(journal *sdjournal.Journal, to *Record) error {
-	err := unmarshalRecord(journal, reflect.ValueOf(to).Elem())
-	if err == nil {
-		tstamp, error := journal.GetRealtimeUsec()
-		if error == nil {
-			to.TimeUsec = int64(tstamp / 1000)
-		} else {
-			to.TimeUsec = time.Now().Unix() * 1000
-		}
+	entry, err := journal.GetEntry()
+	if err != nil {
+		return err
 	}
-	return err
+	to.TimeUsec = int64(entry.RealtimeTimestamp)
+	return unmarshalRecord(entry, reflect.ValueOf(to).Elem())
 }
 
-func unmarshalRecord(journal *sdjournal.Journal, toVal reflect.Value) error {
+func unmarshalRecord(entry *sdjournal.JournalEntry, toVal reflect.Value) error {
 	toType := toVal.Type()
 
 	numField := toVal.NumField()
@@ -39,7 +36,7 @@ func unmarshalRecord(journal *sdjournal.Journal, toVal reflect.Value) error {
 
 		if fieldTypeKind == reflect.Struct {
 			// Recursively unmarshal from the same journal
-			unmarshalRecord(journal, fieldVal)
+			unmarshalRecord(entry, fieldVal)
 		}
 
 		jdKey := fieldTag.Get("journald")
@@ -47,15 +44,20 @@ func unmarshalRecord(journal *sdjournal.Journal, toVal reflect.Value) error {
 			continue
 		}
 
-		value, err := journal.GetData(jdKey)
-		if err != nil || value == "" {
+		value, ok := entry.Fields[jdKey]
+		if !ok {
 			fieldVal.Set(reflect.Zero(fieldType))
 			continue
 		}
 
-		// The value is returned with the key and an equals sign on
-		// the front, so we'll trim those off.
-		value = value[len(jdKey)+1:]
+		if fieldType.Name() == "RawMessage" {
+			if !strings.HasPrefix(value, `{"`) {
+				jenc, _ := json.Marshal(value)
+				value = string(jenc)
+			}
+			fieldVal.SetBytes(json.RawMessage(value))
+			continue
+		}
 
 		switch fieldTypeKind {
 		case reflect.Int:
