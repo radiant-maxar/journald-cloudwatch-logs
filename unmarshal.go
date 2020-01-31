@@ -13,7 +13,7 @@ func UnmarshalRecord(journal *sdjournal.Journal, to *Record) error {
 	err := unmarshalRecord(journal, reflect.ValueOf(to).Elem())
 	if err == nil {
 		tstamp, error := journal.GetRealtimeUsec()
-		if(error == nil) {
+		if error == nil {
 			to.TimeUsec = int64(tstamp / 1000)
 		} else {
 			to.TimeUsec = time.Now().Unix() * 1000
