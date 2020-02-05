@@ -1,4 +1,4 @@
-module journald-cloudwatch-logs
+module github.com/jbronn/journald-cloudwatch-logs
 
 go 1.13
 
