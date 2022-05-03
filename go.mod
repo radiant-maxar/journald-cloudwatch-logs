@@ -1,4 +1,4 @@
-module github.com/jbronn/journald-cloudwatch-logs
+module github.com/radiant-maxar/journald-cloudwatch-logs
 
 go 1.18
 
